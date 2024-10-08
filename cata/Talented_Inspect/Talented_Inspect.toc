@@ -1,0 +1,13 @@
+## Interface: 40000
+## Title: Talented (Inspection module)
+## Title-zhTW: Talented (觀察模組)
+## Author: Jerry
+## Version: v3.0.2-release
+## LoadWith: Blizzard_InspectUI
+## LoadOnDemand: 1
+## X-Curse-Packaged-Version: v3.0.2-release
+## X-Curse-Project-Name: Talented
+## X-Curse-Project-ID: talented
+## X-Curse-Repository-ID: wow/talented/mainline
+
+inspectui.lua
