@@ -28,21 +28,69 @@ local function GetTalentInfoGridOrdered(tab, index)
     -- Populate the talent grid by iterating through all talents in the tab
     for i = 1, GetNumTalents(tab) do
         local name, icon, row, column, rank, maxRank = GetTalentInfo(tab, i)
-
-        if not talentGrid[row] then
-            talentGrid[row] = {}
+        
+        -- Exclude talents that return nil or invalid data
+        if name and name ~= "" then
+            if not talentGrid[row] then
+                talentGrid[row] = {}
+            end
+            -- Store the valid talent in the correct row and column
+            talentGrid[row][column] = {
+                name = name,
+                icon = icon,
+                row = row,
+                column = column,
+                rank = rank,
+                maxRank = maxRank,
+                index = i -- Store the original index to maintain mapping
+            }
         end
+    end
+    -- Flatten the talentGrid into a single ordered list by row (1-7), then by column (1-4)
+    local orderedTalents = {}
+    for row = 1, 7 do  -- Iterate over 7 rows
+        for column = 1, 4 do  -- Iterate over 4 columns
+            local talent = talentGrid[row] and talentGrid[row][column]
+            if talent then
+                table.insert(orderedTalents, talent)
+            end
+        end
+    end
 
-        -- Store the talent in the correct row and column
-        talentGrid[row][column] = {
-            name = name,
-            icon = icon,
-            row = row,
-            column = column,
-            rank = rank,
-            maxRank = maxRank,
-            index = i -- Store the original index to maintain mapping
-        }
+    -- Return the talent that corresponds to the requested index
+    local talent = orderedTalents[index]
+    if talent then
+        return talent.name, talent.icon, talent.row, talent.column, talent.rank, talent.maxRank, talent.index
+    else
+        return nil -- Handle the case where the requested index doesn't exist
+    end
+end
+
+
+local function GetTalentPrereqsGridOrdered(tab, index)
+    -- Create a table to store the talents by their row and column
+    local talentGrid = {}
+
+    -- Populate the talent grid by iterating through all talents in the tab
+    for i = 1, GetNumTalents(tab) do
+        local name, icon, row, column, rank, maxRank = GetTalentInfo(tab, i)
+
+        -- Exclude talents that return nil or invalid data
+        if name and name ~= "" then
+            if not talentGrid[row] then
+                talentGrid[row] = {}
+            end
+            -- Store the valid talent in the correct row and column
+            talentGrid[row][column] = {
+                name = name,
+                icon = icon,
+                row = row,
+                column = column,
+                rank = rank,
+                maxRank = maxRank,
+                index = i -- Store the original index to maintain mapping
+            }
+        end
     end
 
     -- Flatten the talentGrid into a single ordered list by row (1-7), then by column (1-4)
@@ -55,51 +103,23 @@ local function GetTalentInfoGridOrdered(tab, index)
             end
         end
     end
-    -- Return the talent that corresponds to the requested index
+
+    -- Get the talent that corresponds to the requested index
     local talent = orderedTalents[index]
-    if talent then
-        return talent.name, talent.icon, talent.row, talent.column, talent.rank, talent.maxRank, talent.index
+    if not talent then
+        return nil -- Handle case where the requested talent doesn't exist
+    end
+
+    -- Use the valid talent index to get its prerequisites
+    local reqRow, reqColumn = GetTalentPrereqs(tab, talent.index)
+    if reqRow and reqColumn then
+        -- Return the prerequisites' tier and column in the ordered grid
+        return reqRow, reqColumn, true -- isLearnable assumed to be true for this example
     else
-        return nil -- Handle the case where the requested index doesn't exist
+        return nil -- Handle the case where no prerequisites are found
     end
 end
 
-local function GetTalentPrereqsGridOrdered(tab, index)
-    -- First, we need to reorder the talents in the same way we did for GetTalentInfo
-    local talentGrid = {}
-
-    -- Populate the talent grid by iterating through all talents in the tab
-    for i = 1, GetNumTalents(tab) do
-        local _, _, row, column = GetTalentInfo(tab, i)
-
-        if not talentGrid[row] then
-            talentGrid[row] = {}
-        end
-
-        -- Store the talent in the correct row and column
-        talentGrid[row][column] = i -- Store the original index for correct mapping
-    end
-
-    -- Flatten the talentGrid into a single ordered list by row, then by column
-    local orderedTalents = {}
-    for row = 1, 7 do  -- 7 rows
-        for column = 1, 4 do  -- 4 columns
-            if talentGrid[row] and talentGrid[row][column] then
-                table.insert(orderedTalents, talentGrid[row][column])
-            end
-        end
-    end
-
-    -- Use the ordered list to map the given index to the corresponding talent
-    local actualIndex = orderedTalents[index]
-
-    if actualIndex then
-        -- Call the original GetTalentPrereqs using the actual index from the reordered list
-        return GetTalentPrereqs(tab, actualIndex)
-    else
-        return nil -- Handle case where the talent doesn't exist
-    end
-end
 
 
 
@@ -181,6 +201,10 @@ function Talented:CheckSpellData(class)
 				end
 			else
 				if talent.inactive then
+					print("talent name: ", talent.name)
+					print("tab: ", tab)
+					print("index: ", index)
+					print("InfoGridOrdered name: ", name)
 					return DisableTalented("%s:%d:%d NOT INACTIVE", class, tab, index)
 				end
 				local found
@@ -189,10 +213,6 @@ function Talented:CheckSpellData(class)
 					if n == name then found = true break end
 				end
 				if not found then
-					print("talent name: ", talent.name)
-					print("tab: ", tab)
-					print("index: ", index)
-					print("InfoGridOrdered name: ", name)
 					local n, s = pcall(GetSpellInfo, talent.ranks[1])
 					return DisableTalented("%s:%d:%d MISMATCHED %s ~= %s", class, tab, index, s or "unknown talent-"..talent.ranks[1], name)
 				end

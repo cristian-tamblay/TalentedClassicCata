@@ -127,49 +127,25 @@ local function CreateSpellTooltip()
 		return self:NumLines()
 	end
 	local index
-	if CowTip then
-		index = function (self, key)
-			if not key then return "" end
-			local lines = tt:SetSpell(key)
-			if not lines then return "" end
-			local value
-			if lines == 2 and not tt.rights[2]:GetText() then
-				value = tt.lefts[2]:GetText()
-			else
-				value = {}
-				for i=2, tt:NumLines() do
-					value[i - 1] = {
-						left=tt.lefts[i]:GetText(),
-						right=tt.rights[i]:GetText(),
-					}
-				end
+	index = function (self, key)
+		if not key then return "" end
+		local lines = tt:SetSpell(key)
+		if not lines then return "" end
+		local value
+		if lines == 2 and not tt.rights[2]:GetText() then
+			value = tt.lefts[2]:GetText()
+		else
+			value = {}
+			for i=2, tt:NumLines() do
+				value[i - 1] = {
+					left=tt.lefts[i]:GetText(),
+					right=tt.rights[i]:GetText(),
+				}
 			end
-			tt:Hide() -- CowTip forces the Tooltip to Show, for some reason
-			self[key] = value
-			return value
 		end
-	else
-		index = function (self, key)
-			if not key then return "" end
-			local lines = tt:SetSpell(key)
-			if not lines then return "" end
-			local value
-			if lines == 2 and not tt.rights[2]:GetText() then
-				value = tt.lefts[2]:GetText()
-			else
-				value = {}
-				for i=2, tt:NumLines() do
-					value[i - 1] = {
-						left=tt.lefts[i]:GetText(),
-						right=tt.rights[i]:GetText(),
-					}
-				end
-			end
-			self[key] = value
-			return value
-		end
+		self[key] = value
+		return value
 	end
-	Talented.spellDescCache = setmetatable({}, { __index = index, })
 	CreateSpellTooltip = nil
 	return tt
 end
@@ -189,7 +165,7 @@ function Talented:GetTalentDesc(class, tab, index, rank)
 		spellTooltip = CreateSpellTooltip()
 	end
 	local spell = self:UncompressSpellData(class)[tab][index].ranks[rank]
-	return self.spellDescCache[spell]
+	return GetSpellDescription(spell)
 end
 
 function Talented:GetTalentPos(class, tab, index)
